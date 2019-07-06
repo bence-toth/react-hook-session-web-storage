@@ -22,17 +22,17 @@ const useSessionStorage = (key, {updateFrequency}) => {
   }
 
   useEffect(() => {
-    let readSessionStorageInterval
+    let readSessionStorageIntervalId
     if (window.sessionStorage) {
       readFromSessionStorage()
-      readSessionStorageInterval = setInterval(
+      readSessionStorageIntervalId = setInterval(
         readFromSessionStorage,
         updateFrequency
-      ) 
+      )
     }
     return () => {
       if (window.sessionStorage) {
-        clearInterval(readSessionStorageInterval)
+        clearInterval(readSessionStorageIntervalId)
       }
     }
   }, [])
