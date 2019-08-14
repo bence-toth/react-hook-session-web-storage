@@ -8,8 +8,11 @@
     "sessionStorage"
   ],
   "repository": "git@github.com:bence-toth/react-hook-session-web-storage.git",
-  "license": "LGPL",
+  "license": "LGPL-3.0",
   "author": "Bence A. Toth <tothab@gmail.com>",
+  "contributors": [
+    "Aleksander Nowak <alek_nowak@hotmail.com>"
+  ],
   "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && babel src --out-dir dist",
