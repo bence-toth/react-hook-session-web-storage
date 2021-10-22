@@ -1,6 +1,6 @@
 {
   "name": "react-hook-session-web-storage",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A React hook for accessing sessionStorage",
   "keywords": [
     "react",
@@ -27,6 +27,6 @@
     "react": "^16.8.6"
   },
   "peerDependencies": {
-    "react": "^16.8.0"
+    "react": "^16.8.0 || ^17"
   }
 }
