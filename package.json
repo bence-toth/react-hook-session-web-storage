@@ -1,6 +1,6 @@
 {
   "name": "react-hook-session-web-storage",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "A React hook for accessing sessionStorage",
   "keywords": [
     "react",
@@ -21,10 +21,11 @@
   "devDependencies": {
     "@babel/cli": "^7.5.0",
     "@babel/core": "^7.5.0",
+    "@babel/plugin-proposal-optional-chaining": "^7.16.0",
     "@babel/preset-env": "^7.5.0",
     "@babel/preset-react": "^7.0.0",
     "babel-core": "^7.0.0-bridge",
-    "react": "^16.8.6"
+    "react": "^16.9.0"
   },
   "peerDependencies": {
     "react": "^16.8.0 || ^17"

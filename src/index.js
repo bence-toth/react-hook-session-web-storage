@@ -1,70 +1,132 @@
-import {useState, useEffect} from 'react'
+import { useState, useEffect, useCallback } from "react";
 
-const useSessionStorage = (key, {updateFrequency = 1000} = {}) => {
-  const [value, setValue] = useState()
+const isString = (variable) =>
+  typeof variable == "string" || variable instanceof String;
 
-  const writeToSessionStorage = newValue => {
-    if (newValue !== undefined) {
-      sessionStorage.setItem(key, newValue)
+const clearObjectValues = (object) =>
+  Object.fromEntries(Object.entries(object).map(([key]) => [key, null]));
+
+const safeObjectValues = (object) =>
+  Object.fromEntries(
+    Object.entries(object).map(([key, value]) => [
+      key,
+      [undefined, null].includes(value) ? null : `${value}`,
+    ])
+  );
+
+const updateObjectFromSessionStorage = (object) => {
+  let newValues = {};
+  let hasSomethingChanged = false;
+  for (const [key] of Object.entries(object)) {
+    const oldValue = object[key];
+    const newValue = sessionStorage?.getItem?.(key);
+    if (newValue !== oldValue) {
+      newValues = { ...newValues, [key]: sessionStorage?.getItem?.(key) };
+      hasSomethingChanged = true;
     }
-    else {
-      sessionStorage.removeItem(key)
-    }
-    setValue(newValue)
   }
+
+  if (!hasSomethingChanged) {
+    return false;
+  }
+
+  return newValues;
+};
+
+const useSessionStorage = (keys, { syncFrequency = 0 } = {}) => {
+  const isUsingMultipleKeys = !isString(keys);
+  const initialValue = isUsingMultipleKeys ? clearObjectValues(keys) : null;
+  const [value, setValue] = useState(initialValue);
+
+  const readFromSessionStorage = useCallback(() => {
+    if (isUsingMultipleKeys) {
+      const newValues = updateObjectFromSessionStorage(value);
+      if (newValues) {
+        setValue({ ...value, ...newValues });
+        return { ...value, ...newValues };
+      }
+      return value;
+    } else {
+      const oldValue = value;
+      const newValue = sessionStorage?.getItem?.(keys);
+      if (newValue !== oldValue) {
+        setValue(newValue);
+      }
+      return newValue;
+    }
+  }, [isUsingMultipleKeys, keys, value]);
+
+  const writeToSessionStorage = useCallback(
+    (newValue) => {
+      if (isUsingMultipleKeys) {
+        for (const [updatedKey, updatedValue] of Object.entries(newValue)) {
+          let safeUpdatedValue;
+          if ([undefined, null].includes(updatedValue)) {
+            safeUpdatedValue = null;
+            sessionStorage?.removeItem?.(updatedKey);
+          } else {
+            safeUpdatedValue = `${updatedValue}`;
+            sessionStorage?.setItem?.(updatedKey, safeUpdatedValue);
+          }
+        }
+        setValue((previousValue) => {
+          return { ...previousValue, ...safeObjectValues(newValue) };
+        });
+      } else {
+        let safeUpdatedValue;
+        if ([undefined, null].includes(newValue)) {
+          safeUpdatedValue = null;
+          sessionStorage?.removeItem?.(keys);
+        } else {
+          safeUpdatedValue = `${newValue}`;
+          sessionStorage?.setItem?.(keys, safeUpdatedValue);
+        }
+        setValue(safeUpdatedValue);
+      }
+    },
+    [isUsingMultipleKeys, keys]
+  );
 
   useEffect(() => {
-    const readFromSessionStorage = () => {
-      const oldValue = value
-      const newValue = sessionStorage.getItem(key)
+    const readSingleKeyFromSessionStorage = () => {
+      const oldValue = value;
+      const newValue = sessionStorage?.getItem?.(keys);
       if (newValue !== oldValue) {
-        setValue(newValue)
+        setValue(newValue);
       }
-    }
+    };
 
-    let readSessionStorageIntervalId
-    if (window.sessionStorage) {
-      readFromSessionStorage()
+    const readMultipleKeysFromSessionStorage = () => {
+      const newValues = updateObjectFromSessionStorage(value);
+      if (newValues) {
+        setValue({ ...value, ...newValues });
+      }
+    };
+
+    const readFromSessionStorage = isUsingMultipleKeys
+      ? readMultipleKeysFromSessionStorage
+      : readSingleKeyFromSessionStorage;
+
+    let readSessionStorageIntervalId;
+    readFromSessionStorage();
+    if (syncFrequency > 0) {
       readSessionStorageIntervalId = setInterval(
         readFromSessionStorage,
-        updateFrequency
-      )
+        syncFrequency
+      );
     }
     return () => {
-      if (window.sessionStorage) {
-        clearInterval(readSessionStorageIntervalId)
+      if (syncFrequency > 0) {
+        clearInterval(readSessionStorageIntervalId);
       }
-    }
-  }, [key, value, updateFrequency])
+    };
+  }, [keys, value, isUsingMultipleKeys, syncFrequency]);
 
-  return [value, writeToSessionStorage]
-}
-
-const useSessionStorageNoSync = key => {
-  const [value, setValue] = useState()
-
-  const readFromSessionStorage = () => {
-    const oldValue = value
-    const newValue = sessionStorage.getItem(key)
-    if (newValue !== oldValue) {
-      setValue(newValue)
-    }
-    return newValue
+  if (syncFrequency > 0) {
+    return [readFromSessionStorage, writeToSessionStorage];
   }
 
-  const writeToSessionStorage = newValue => {
-    if (newValue !== undefined) {
-      sessionStorage.setItem(key, newValue)
-    }
-    else {
-      sessionStorage.removeItem(key)
-    }
-    setValue(newValue)
-  }
+  return [value, writeToSessionStorage];
+};
 
-  return [readFromSessionStorage, writeToSessionStorage]
-}
-
-export default useSessionStorage
-
-export {useSessionStorageNoSync}
+export default useSessionStorage;
